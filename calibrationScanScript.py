@@ -3,9 +3,9 @@ import ROOT as r
 import string
 
 def getSubDetID(detid):
-    Numdetid = string.atoi(detid)
-    sub = (Numdetid>>25)&0x7
-    return sub
+	Numdetid = string.atoi(detid)
+	sub = (Numdetid>>25)&0x7
+	return sub
 
 SubDetNames = {
 		3:"TIB",
@@ -25,10 +25,10 @@ outFileName = "out.root"
 fileKeys = ["ISHA","idAddress","idTemp","mapping"]
 baseDir = "/afs/cern.ch/user/y/yduh/public/txt/"
 fileNames = {
-		"ISHA":"1_address_ISHA_VFS.txt",
+		"ISHA":"./scan/TOB/230423/1_address_ISHA_VFS.txt",
 		"idAddress":"2_id_address.txt",
 		"idTemp":"3_id_Temp.txt",
-		"mapping":"4_Temp_ISHA_VFS.txt"
+		"mapping":"4_Temp_ISHA_VFS_TOB.txt"
 		#"mapping":"4_Temp_ISHA_VFS_TEC.txt"
 		#"mapping":"4_Temp_ISHA_VFS_TOB.txt"
 		}
@@ -63,24 +63,26 @@ for fileKey in fileKeys:
 	for lineNumber,line in enumerate(inputLines):
 		if line != "\n":
 			if fileKey == "idAddress":
-				allData[fileKey][line.split()[1]] = line.split()[0]
+				modifiedLineKey = ".".join(line.split()[1].split(".")[1:])
+				allData[fileKey][modifiedLineKey] = line.split()[0]
 			elif fileKey == "idTemp":
 				allData[fileKey][line.split()[0]] = line.split()[1]
 			elif fileKey == "mapping":
 				allData[fileKey][line.split()[0]] = line.split()[1:]
 				mappingList.append(int(line.split()[0]))
 			else:
-				allData[fileKey][lineNumber] = line.split()
+				tempDataList = line.split()
+				allData[fileKey][lineNumber] = (".".join( tempDataList[:5]  ), tempDataList[-2], tempDataList[-1] )
 
-				truncAddress = ".".join(line.split()[0].split(".")[:-1])
+				truncAddress = ".".join( tempDataList[:4] )
 
 				if truncAddress not in ISHAValues:
 					ISHAValues[truncAddress] = []
-				ISHAValues[truncAddress].append(int(line.split()[1]))
+				ISHAValues[truncAddress].append(int(tempDataList[-2]))
 
 				if truncAddress not in VFSValues:
 					VFSValues[truncAddress] = []
-				VFSValues[truncAddress].append(int(line.split()[2]))
+				VFSValues[truncAddress].append(int(tempDataList[-1]))
 
 # ======================================================
 # Get the final ISHA and VFS for each column
@@ -90,7 +92,7 @@ finalVFSs = {}
 for lineNumber,datum in allData["ISHA"].iteritems():
 	truncAddress = ".".join(datum[0].split()[0].split(".")[:-1])
 	if truncAddress in finalISHAs or truncAddress in finalVFSs: continue
-	if datum[0].split(".")[3][0] != "0":
+	if datum[0].split(".")[2][0] != "0":
 		addressForIDAddress = ".".join(datum[0].split(".")[:-1])
 	else:
 		tempList = datum[0].split(".")
