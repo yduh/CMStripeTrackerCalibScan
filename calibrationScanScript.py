@@ -1,7 +1,36 @@
 
 import ROOT as r
 import string
+import sys, getopt
 
+
+# ======================================================
+# parsing command line arguments
+# ======================================================
+RunNum = ''
+TrkPartition = ''
+refTrkPartition = ''
+
+myopts, args = getopt.getopt(sys.argv[1:], "r:p:f:")
+
+# o == option, a == argument passed to the o
+for o, a in myopts:
+    if o == '-r':
+        RunNum = a
+    elif o == '-p':
+        TrkPartition = a
+    elif o == '-f':
+        refTrkPartition = a
+    else:
+        print("Usage: %s -r run_number -p tracker_partition -f ref_tracker_partition" % sys.argv[0])
+
+# Display input and output file names passed as the args
+print ("Run number: %s, Tracker partition: %s, ref partition %s" % (RunNum, TrkPartition, refTrkPartition))
+
+
+# ======================================================
+# Sub-detectors info and save to different lists
+# ======================================================
 def getSubDetID(detid):
 	Numdetid = string.atoi(detid)
 	sub = (Numdetid>>25)&0x7
@@ -17,18 +46,18 @@ SubDetNames = {
 # ======================================================
 # Configurables
 # ======================================================
-outFileName = "out.root"
+outFileName = "out_%s_%s.root" % (TrkPartition, RunNum)
 
 # ======================================================
 # File keys to specify files
 # ======================================================
 fileKeys = ["ISHA","idAddress","idTemp","mapping"]
-baseDir = "/afs/cern.ch/user/y/yduh/public/txt/"
+baseDir = "/afs/cern.ch/user/y/yduh/CalibrationScan/txt/2015/"
 fileNames = {
-		"ISHA":"./scan/TOB/230423/1_address_ISHA_VFS.txt",
+		"ISHA":"ishavfsScan_sane3sigmas.txt.%s_%s" % (TrkPartition, RunNum),
 		"idAddress":"2_id_address.txt",
 		"idTemp":"3_id_Temp.txt",
-		"mapping":"4_Temp_ISHA_VFS_TOB.txt"
+		"mapping":"4_Temp_ISHA_VFS_%s.txt" % refTrkPartition
 		#"mapping":"4_Temp_ISHA_VFS_TEC.txt"
 		#"mapping":"4_Temp_ISHA_VFS_TOB.txt"
 		}
@@ -41,8 +70,10 @@ allData = {}
 ISHAHists = {}
 VFSHists = {}
 for SubDetID,SubDetName in SubDetNames.iteritems():
-	ISHAHists[SubDetID] = r.TH1D("ISHA_%s"%SubDetName," ; #Delta ISHA %s ; Entry"%SubDetName,201,-100.5,100.5)
-	VFSHists[SubDetID] = r.TH1D("VFS_%s"%SubDetName," ; #Delta VFS %s ; Entry"%SubDetName,201,-100.5,100.5)
+    ISHAHists[SubDetID] = r.TH1D("ISHA_%s"%SubDetName," ; #Delta ISHA %s ; Entry"%SubDetName,201,-100.5,100.5)
+    VFSHists[SubDetID] = r.TH1D("VFS_%s"%SubDetName," ; #Delta VFS %s ; Entry"%SubDetName,201,-100.5,100.5)
+    ISHAHists[SubDetID].SetTitle("Run %s"%RunNum)
+    VFSHists[SubDetID].SetTitle("Run %s"%RunNum)
 
 # ======================================================
 # Add basedir to fileNames, because I am lazy
@@ -123,6 +154,7 @@ for key,Hist in ISHAHists.iteritems():
 
 for key,Hist in VFSHists.iteritems():
 	Hist.Write()
+
 
 outFile.Close()
 
